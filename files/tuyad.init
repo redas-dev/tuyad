@@ -1,0 +1,40 @@
+#!/bin/sh /etc/rc.common
+
+USE_PROCD=1
+
+start_service(){
+    local prodID
+    local devID
+    local secret
+    local daemon
+
+    config load 'tuyad'
+
+    prodID=$(uci -q get tuyad.tuya_config.productID) 
+    devID=$(uci -q get tuyad.tuya_config.deviceID) 
+    secret=$(uci -q get tuyad.tuya_config.secret) 
+    daemon=$(uci -q get tuyad.tuya_config.daemon) 
+
+	procd_open_instance
+
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+
+    if [ "$daemon" -eq 1 ]; then
+	    procd_set_param command /usr/bin/tuyad -p"$prodID" -d"$devID" -s"$secret" -D
+    else
+        procd_set_param command /usr/bin/tuyad -p"$prodID" -d"$devID" -s"$secret"
+    fi
+
+    procd_set_param file /etc/config/example
+    procd_close_instance
+}
+
+service_triggers(){
+	procd_add_reload_trigger "tuya_config"
+}
+
+reload_service(){
+	stop
+	start
+}
